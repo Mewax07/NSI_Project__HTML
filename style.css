@@ -1,0 +1,34 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	background: #1e1e1e;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.cible {
+	width: 90vw;
+	height: 90vh;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.circle_cible {
+	--size: attr(width length-percentage);
+	background: red;
+	border-radius: 50%;
+	aspect-ratio: 1/1;
+	width: var(--size);
+	height: var(--size);
+}
+
+.t_p__1 {
+	background: white;
+}
