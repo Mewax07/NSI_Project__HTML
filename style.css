@@ -1,34 +1,36 @@
 * {
 	margin: 0;
 	padding: 0;
+	box-sizing: border-box;
 }
 
-html {
-	background: #1e1e1e;
+html,
+body {
 	width: 100vw;
 	height: 100vh;
+	background: #1e1e1e;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 
 .cible {
-	width: 90vw;
-	height: 90vh;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	position: relative;
+	width: 90vmin;
+	height: 90vmin;
 }
 
 .circle_cible {
-	--size: attr(width length-percentage);
-	background: red;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 	border-radius: 50%;
-	aspect-ratio: 1/1;
-	width: var(--size);
-	height: var(--size);
-}
-
-.t_p__1 {
-	background: white;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	padding-top: 5px;
+	font-weight: bold;
+	user-select: none;
+	font-size: 24px;
 }
