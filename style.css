@@ -19,18 +19,3 @@ body {
 	width: 90vmin;
 	height: 90vmin;
 }
-
-.circle_cible {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	border-radius: 50%;
-	display: flex;
-	justify-content: center;
-	align-items: flex-start;
-	padding-top: 5px;
-	font-weight: bold;
-	user-select: none;
-	font-size: 24px;
-}
