@@ -19,3 +19,26 @@ body {
 	width: 90vmin;
 	height: 90vmin;
 }
+
+
+table {
+	background: #87b7b9;
+	border: 1px black solid;
+	display: flex;
+	flex-direction: column;
+	padding: 2px;
+}
+
+th,
+td {
+	border: 1px black solid;
+	padding: 8px;
+}
+
+td {
+	text-align: center;
+}
+
+td:first-child {
+	text-align: start;
+}
