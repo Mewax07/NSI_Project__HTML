@@ -457,8 +457,11 @@ function renderTarget() {
 }
 
 function renderCredits() {
-	const link = new Html("a").text("Rediriger vers les crédits");
-	link.elm.href = "https://github.com/Mewax07/NSI_Project__HTML/blob/main/credits.md";
+	const link = new Html("a").text("Rediriger vers les crédits").styleJs({
+		color: "#e1e1e1",
+	});
+	link.elm.href =
+		"https://github.com/Mewax07/NSI_Project__HTML/blob/main/credits.md";
 
 	new Html()
 		.append(link)
@@ -467,7 +470,7 @@ function renderCredits() {
 			bottom: "5px",
 			right: "5px",
 		})
-		.appendTo("body");
+		.appendTo(document.body);
 }
 
 function render() {
