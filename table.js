@@ -1,26 +1,27 @@
-import { Html } from './lib/html.js';
-import { TARGET_REGISTRY } from './lib/targets.js';
+import { Html } from "./lib/html.js";
+import { TARGET_REGISTRY } from "./lib/targets.js";
 
-const CLE = 'tir_session';
+// Touche pas
+const KEY = "tir_session";
 
 function chargerDonnees() {
 	try {
-		const raw = localStorage.getItem(CLE);
+		const raw = localStorage.getItem(KEY);
 		return raw ? JSON.parse(raw) : null;
 	} catch {
 		return null;
 	}
 }
 
-const E = chargerDonnees();
-const appEl = Html.from('#app');
+const data = chargerDonnees();
+const appEl = Html.from("#app");
 
 function somme(arr) {
 	return arr.reduce((a, b) => a + b, 0);
 }
 
 function fmt(v) {
-	return v === 10 ? 'X' : (v ?? '-');
+	return v === 10 ? "X" : (v ?? "-");
 }
 
 function totalJoueur(joueur) {
@@ -32,98 +33,99 @@ function el(tag) {
 }
 
 function div() {
-	return new Html('div');
+	return new Html("div");
 }
 
 function span(t) {
-	return new Html('span').text(t);
+	return new Html("span").text(t);
 }
 
 function bouton(texte, classes, action) {
-	const b = el('button').classOn('btn');
+	const b = el("button").classOn("btn");
 	if (classes) classes.forEach((c) => b.classOn(c));
-	b.text(texte).on('click', action);
+	b.text(texte).on("click", action);
 	return b;
 }
 
 function mkTh(texte, extra) {
-	const th = el('th').text(String(texte));
-	if (extra?.rowspan) th.attr('rowspan', String(extra.rowspan));
+	const th = el("th").text(String(texte));
+	if (extra?.rowspan) th.attr("rowspan", String(extra.rowspan));
 	return th;
 }
 
 function mkTd(texte, classes, extra) {
-	const td = el('td').text(String(texte));
+	const td = el("td").text(String(texte));
 	if (classes) classes.forEach((c) => td.classOn(c));
-	if (extra?.rowspan) td.attr('rowspan', String(extra.rowspan));
+	if (extra?.rowspan) td.attr("rowspan", String(extra.rowspan));
 	return td;
 }
 
 function barreHaute() {
-	const barre = div().classOn('barre-haute');
-	barre.append(span('SCORING TIR').classOn('barre-marque'));
-	barre.append(span('Resultats').classOn('barre-titre'));
+	const barre = div().classOn("barre-haute");
+	barre.append(span("SCORING").classOn("barre-marque"));
+	barre.append(span("Résultats").classOn("barre-titre"));
 	barre.append(
-		el('a')
-			.attr('href', './index.html')
-			.classOn('btn')
-			.classOn('btn-petit')
-			.text('Retour'),
+		el("a")
+			.attr("href", "./index.html")
+			.classOn("btn")
+			.classOn("btn-petit")
+			.text("Retour"),
 	);
 	return barre;
 }
 
-if (!E || !E.participants || E.participants.length === 0) {
+if (!data || !data.players || data.players.length === 0) {
 	appEl.append(barreHaute());
-	const page = div().classOn('page');
-	page.append(el('h2').text('Aucune donnee'));
+	const page = div().classOn("page");
+	page.append(el("h2").text("Aucune donnée"));
 	page.append(
-		el('p').text(
-			"Aucune session enregistree. Commencez une partie depuis l'accueil.",
+		el("p").text(
+			"Aucune session enregistré, lancez une partie depuis l'accueil.",
 		),
 	);
-	const lien = el('a')
-		.attr('href', './index.html')
-		.classOn('btn')
-		.classOn('btn-principal')
-		.text('Demarrer');
-	page.append(div().classOn('rangee').classOn('mt2').append(lien));
+	const lien = el("a")
+		.attr("href", "./index.html")
+		.classOn("btn")
+		.classOn("btn-principal")
+		.text("Retourner au début");
+	page.append(div().classOn("rangee").classOn("mt2").append(lien));
 	appEl.append(page);
 } else {
 	const cible =
-		TARGET_REGISTRY.find((t) => t.id === E.cibleId) ?? TARGET_REGISTRY[0];
+		TARGET_REGISTRY.find((t) => t.id === data.targetId) ??
+		TARGET_REGISTRY[0];
 	const etiquettes = cible.allSeriesLabels;
 	const totalSeries = etiquettes.length;
 
 	appEl.append(barreHaute());
-	const page = div().classOn('page');
+	const page = div().classOn("page");
 
-	page.append(el('h2').text('Tableau des resultats'));
-	page.append(el('p').text(cible.name + ' — ' + cible.distance));
+	page.append(el("h2").text("Tableau des résultats"));
+	page.append(el("p").text(cible.name + " - " + cible.distance));
 
-	const onglets = div().classOn('onglets');
+	const onglets = div().classOn("onglets");
 	const zoneTableau = div();
 
 	function construireTableau(idxJoueur) {
 		zoneTableau.clear();
-		const joueur = E.participants[idxJoueur];
+		const joueur = data.players[idxJoueur];
 
-		const conteneur = div().classOn('conteneur-tableau');
-		const tableau = el('table').classOn('tableau-resultats');
-		const entete = el('thead');
-		const ligneEntete = el('tr');
+		const conteneur = div().classOn("conteneur-tableau");
+		const tableau = el("table").classOn("tableau-resultats");
+		const entete = el("thead");
+		const ligneEntete = el("tr");
 
-		ligneEntete.append(mkTh('Serie'));
+		ligneEntete.append(mkTh("Série"));
 		for (let i = 1; i <= cible.shotsPerSerie; i++)
-			ligneEntete.append(mkTh('n' + i));
-		ligneEntete.append(mkTh('Pts'));
-		if (cible.shotsPerSerie === 5) ligneEntete.append(mkTh('Passe'));
-		ligneEntete.append(mkTh('Total'));
+			ligneEntete.append(mkTh("n°" + i));
+		ligneEntete.append(mkTh("Pts"));
+		if (cible.shotsPerSerie === 5) ligneEntete.append(mkTh("Passe"));
+		ligneEntete.append(mkTh("Total"));
 
 		entete.append(ligneEntete);
 		tableau.append(entete);
 
-		const corps = el('tbody');
+		const corps = el("tbody");
 		let grandTotal = 0;
 
 		for (let i = 0; i < totalSeries; i++) {
@@ -132,26 +134,26 @@ if (!E || !E.participants || E.participants.length === 0) {
 			const totalSerie = serie ? somme(serie) : null;
 			if (totalSerie !== null) grandTotal += totalSerie;
 
-			const ligne = el('tr');
-			ligne.append(mkTd(etiquettes[i], ['td-serie']));
+			const ligne = el("tr");
+			ligne.append(mkTd(etiquettes[i], ["td-serie"]));
 
 			tirs.forEach((v) => {
-				if (v === null) ligne.append(mkTd('-', ['td-vide']));
+				if (v === null) ligne.append(mkTd("-", ["td-vide"]));
 				else ligne.append(mkTd(fmt(v), []));
 			});
 
 			ligne.append(
 				totalSerie !== null
-					? mkTd(totalSerie, ['td-accent'])
-					: mkTd('-', ['td-vide']),
+					? mkTd(totalSerie, ["td-accent"])
+					: mkTd("-", ["td-vide"]),
 			);
 
 			if (cible.shotsPerSerie === 5 && i % 2 === 0) {
-				const s1 = joueur.series[i],
-					s2 = joueur.series[i + 1];
-				const passe = s1 && s2 ? somme(s1) + somme(s2) : '-';
+				const s1 = joueur.series[i];
+				const s2 = joueur.series[i + 1];
+				const passe = s1 && s2 ? somme(s1) + somme(s2) : "-";
 				ligne.append(
-					mkTd(passe, s1 && s2 ? ['td-accent'] : ['td-vide'], {
+					mkTd(passe, s1 && s2 ? ["td-accent"] : ["td-vide"], {
 						rowspan: 2,
 					}),
 				);
@@ -159,7 +161,7 @@ if (!E || !E.participants || E.participants.length === 0) {
 
 			if (i === 0) {
 				ligne.append(
-					mkTd(totalJoueur(joueur), ['td-accent', 'td-grand-total'], {
+					mkTd(totalJoueur(joueur), ["td-accent", "td-grand-total"], {
 						rowspan: totalSeries + 1,
 					}),
 				);
@@ -168,15 +170,15 @@ if (!E || !E.participants || E.participants.length === 0) {
 			corps.append(ligne);
 		}
 
-		const ligneTotale = el('tr');
-		const tdTotalLbl = el('td')
-			.text('TOTAL')
-			.classOn('td-serie')
-			.classOn('td-total-lbl');
+		const ligneTotale = el("tr");
+		const tdTotalLbl = el("td")
+			.text("TOTAL")
+			.classOn("td-serie")
+			.classOn("td-total-lbl");
 		ligneTotale.append(tdTotalLbl);
 		for (let i = 0; i < cible.shotsPerSerie; i++)
-			ligneTotale.append(mkTd('', ['td-vide']));
-		ligneTotale.append(mkTd(grandTotal, ['td-accent', 'td-total-bas']));
+			ligneTotale.append(mkTd("", ["td-vide"]));
+		ligneTotale.append(mkTd(grandTotal, ["td-accent", "td-total-bas"]));
 		corps.append(ligneTotale);
 
 		tableau.append(corps);
@@ -184,12 +186,12 @@ if (!E || !E.participants || E.participants.length === 0) {
 		zoneTableau.append(conteneur);
 	}
 
-	E.participants.forEach((part, idx) => {
-		const onglet = el('button').classOn('onglet').text(part.nom);
-		if (idx === 0) onglet.classOn('actif');
-		onglet.on('click', () => {
-			onglets.qsa('.onglet').forEach((o) => o.classOff('actif'));
-			onglet.classOn('actif');
+	data.players.forEach((joueur, idx) => {
+		const onglet = el("button").classOn("onglet").text(joueur.name);
+		if (idx === 0) onglet.classOn("actif");
+		onglet.on("click", () => {
+			onglets.qsa(".onglet").forEach((o) => o.classOff("actif"));
+			onglet.classOn("actif");
 			construireTableau(idx);
 		});
 		onglets.append(onglet);
@@ -199,30 +201,30 @@ if (!E || !E.participants || E.participants.length === 0) {
 	construireTableau(0);
 	page.append(zoneTableau);
 
-	page.append(el('h3').text('Classement').classOn('titre-section'));
+	page.append(el("h3").text("Classement").classOn("titre-section"));
 
-	const classes = [...E.participants]
-		.map((p) => ({ ...p, total: totalJoueur(p) }))
+	const classes = [...data.players]
+		.map((j) => ({ ...j, total: totalJoueur(j) }))
 		.sort((a, b) => b.total - a.total);
 
-	const listeClassement = div().classOn('liste-classement');
+	const listeClassement = div().classOn("liste-classement");
 	classes.forEach((joueur, rang) => {
-		const ligne = div().classOn('ligne-classement');
-		if (rang === 0) ligne.classOn('premier');
-		ligne.append(span('#' + (rang + 1)).classOn('rang-numero'));
-		ligne.append(span(joueur.nom).classOn('rang-nom'));
-		ligne.append(span(String(joueur.total)).classOn('rang-score'));
+		const ligne = div().classOn("ligne-classement");
+		if (rang === 0) ligne.classOn("premier");
+		ligne.append(span("#" + (rang + 1)).classOn("rang-numero"));
+		ligne.append(span(joueur.name).classOn("rang-nom"));
+		ligne.append(span(String(joueur.total)).classOn("rang-score"));
 		listeClassement.append(ligne);
 	});
 	page.append(listeClassement);
 
-	function construireExport() {
+	function genExport() {
 		return {
 			discipline: cible.name,
 			distance: cible.distance,
 			date: new Date().toISOString().slice(0, 10),
-			participants: E.participants.map((joueur) => ({
-				nom: joueur.nom,
+			joueurs: data.players.map((joueur) => ({
+				nom: joueur.name,
 				total: totalJoueur(joueur),
 				series: etiquettes.map((lbl, i) => ({
 					serie: lbl,
@@ -233,62 +235,58 @@ if (!E || !E.participants || E.participants.length === 0) {
 		};
 	}
 
-	function construireCsv(data) {
+	function genCSV(exportData) {
 		const n = cible.shotsPerSerie;
 		const entete = [
-			'Participant',
-			'Serie',
-			...Array.from({ length: n }, (_, i) => 'Tir ' + (i + 1)),
-			'Pts/Serie',
-			'Total',
+			"Joueur",
+			"Série",
+			...Array.from({ length: n }, (_, i) => "Tir " + (i + 1)),
+			"Pts/Série",
+			"Total",
 		];
-		const lignes = [entete.join(',')];
-		for (const j of data.participants)
+		const lignes = [entete.join(",")];
+		for (const j of exportData.joueurs)
 			for (const s of j.series)
 				lignes.push(
 					[
-						'"' + j.nom + '"',
-						'"' + s.serie + '"',
-						...Array.from({ length: n }, (_, i) => s.tirs[i] ?? ''),
+						"'" + j.nom + "'",
+						"'" + s.serie + "'",
+						...Array.from({ length: n }, (_, i) => s.tirs[i] ?? ""),
 						s.total,
 						j.total,
-					].join(','),
+					].join(","),
 				);
-		return lignes.join('\n');
+		return lignes.join("\n");
 	}
 
-	function telecharger(nom, contenu, type) {
-		const a = document.createElement('a');
+	function download(nom, contenu, type) {
+		const a = document.createElement("a");
 		a.href = URL.createObjectURL(new Blob([contenu], { type }));
 		a.download = nom;
 		a.click();
 	}
 
-	const rangeeExport = div().classOn('rangee-export');
+	const rangeeExport = div().classOn("rangee-export");
 
 	rangeeExport.append(
-		bouton('Exporter en JSON', [], () =>
-			telecharger(
-				'resultats.json',
-				JSON.stringify(construireExport(), null, 2),
-				'application/json',
+		bouton("Exporter en JSON", [], () =>
+			download(
+				"resultats.json",
+				JSON.stringify(genExport(), null, 2),
+				"application/json",
 			),
 		),
 	);
 	rangeeExport.append(
-		bouton('Exporter en CSV', [], () =>
-			telecharger(
-				'resultats.csv',
-				construireCsv(construireExport()),
-				'text/csv',
-			),
+		bouton("Exporter en CSV", [], () =>
+			download("resultats.csv", genCSV(genExport()), "text/csv"),
 		),
 	);
 	rangeeExport.append(
-		bouton('Nouvelle session', ['btn-danger'], () => {
-			if (confirm('Effacer les donnees et recommencer ?')) {
-				localStorage.removeItem(CLE);
-				window.location.href = './index.html';
+		bouton("Nouvelle session", ["btn-danger"], () => {
+			if (confirm("Effacer les données et recommencer")) {
+				localStorage.removeItem(KEY);
+				window.location.href = "./index.html";
 			}
 		}),
 	);

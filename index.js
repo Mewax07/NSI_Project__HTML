@@ -1,50 +1,52 @@
-import { Html } from './lib/html.js';
-import { TARGET_REGISTRY } from './lib/targets.js';
+import { Html } from "./lib/html.js";
+import { TARGET_REGISTRY } from "./lib/targets.js";
 
-const CLE = 'tir_session';
+// A ne pas toucher
+const KEY = "tir_session";
 
-function etatDefaut() {
+function defaultState() {
 	return {
-		etape: 'accueil',
-		cibleId: null,
-		participants: [],
-		joueurActuel: 0,
-		serieActuelle: 0,
-		tirsEnCours: [],
+		step: "home",
+		targetId: null,
+		players: [],
+		currentPlayer: 0,
+		currentSerie: 0,
+		currentShots: [],
 	};
 }
 
-let E = (() => {
+let parsedData = (() => {
 	try {
-		const raw = localStorage.getItem(CLE);
-		return raw ? JSON.parse(raw) : etatDefaut();
+		const raw = localStorage.getItem(KEY);
+		return raw ? JSON.parse(raw) : defaultState();
 	} catch {
-		return etatDefaut();
+		return defaultState();
 	}
 })();
 
-function sauvegarder() {
-	localStorage.setItem(CLE, JSON.stringify(E));
+function save() {
+	localStorage.setItem(KEY, JSON.stringify(parsedData));
 }
 
-function reinitialiser() {
-	E = etatDefaut();
-	sauvegarder();
-	afficher();
+function reset() {
+	parsedData = defaultState();
+	save();
+	render();
 }
 
-function getCible() {
+function getTarget() {
 	return (
-		TARGET_REGISTRY.find((t) => t.id === E.cibleId) ?? TARGET_REGISTRY[0]
+		TARGET_REGISTRY.find((t) => t.id === parsedData.targetId) ??
+		TARGET_REGISTRY[0]
 	);
 }
 
-function somme(arr) {
+function sum(arr) {
 	return arr.reduce((a, b) => a + b, 0);
 }
 
 function fmt(v) {
-	return v === 10 ? 'X' : (v ?? '-');
+	return v === 10 ? "X" : (v ?? "-");
 }
 
 function el(tag) {
@@ -52,169 +54,180 @@ function el(tag) {
 }
 
 function div() {
-	return new Html('div');
+	return new Html("div");
 }
 
 function span(t) {
-	return new Html('span').text(t);
+	return new Html("span").text(t);
 }
 
-function bouton(texte, classes, action) {
-	const b = el('button').classOn('btn');
+function btn(label, classes, onClick) {
+	const b = el("button").classOn("btn");
 	if (classes) classes.forEach((c) => b.classOn(c));
-	b.text(texte).on('click', action);
-	return b;
+	return b.text(label).on("click", onClick);
 }
 
-const appEl = Html.from('#app');
+const appEl = Html.from("#app");
 
-function barreHaute(titre, droite) {
-	const barre = div().classOn('barre-haute');
-	barre.append(span('SCORING TIR').classOn('barre-marque'));
-	const t = span(titre || '').classOn('barre-titre');
-	barre.append(t);
-	if (droite) barre.append(span(droite).classOn('barre-droite'));
-	return barre;
+function topbar(title, right) {
+	const bar = div().classOn("topbar");
+	bar.append(
+		span("Projet de NSI - Competition de tirs").classOn("topbar-brand"),
+	);
+	bar.append(span(title || "").classOn("topbar-title"));
+	if (right) bar.append(span(right).classOn("topbar-right"));
+	return bar;
 }
 
-function afficherAccueil() {
+function renderHome() {
 	appEl.clear();
-	appEl.append(barreHaute('', ''));
+	appEl.append(topbar("", ""));
 
-	const page = div().classOn('page');
+	const page = div().classOn("page");
 
-	const hero = div().classOn('hero');
-	hero.append(el('h1').text('Scoring Tir'));
-	hero.append(el('p').text('Choisissez une discipline pour commencer.'));
+	const hero = div().classOn("hero");
+	hero.append(el("h1").text("Compétition"));
+	hero.append(el("p").text("Choisissez un type de tir pour commencer."));
 	page.append(hero);
 
-	page.append(el('h3').text('Discipline'));
+	page.append(el("h3").text("Type de tir"));
 
-	const grille = div().classOn('grille-cartes');
-	TARGET_REGISTRY.forEach((cible) => {
-		const carte = div().classOn('carte');
-		if (E.cibleId === cible.id) carte.classOn('selectionnee');
-		carte.append(span(cible.name).classOn('etiquette'));
-		carte.append(
-			el('p').text(
-				cible.distance +
-					' — ' +
-					cible.shotsPerSerie +
-					' tirs par serie',
+	const grid = div().classOn("card-grid");
+	TARGET_REGISTRY.forEach((target) => {
+		const card = div().classOn("card");
+		if (parsedData.targetId === target.id) card.classOn("selected");
+		card.append(span(target.name).classOn("card-badge"));
+		const totalSeries = target.seriesConfig.reduce(
+			(a, b) => a + b.count,
+			0,
+		);
+		card.append(
+			el("p").text(
+				target.distance +
+					" - " +
+					target.shotsPerSerie +
+					" tirs par serie - " +
+					totalSeries +
+					" series",
 			),
 		);
-		carte.on('click', () => {
-			E.cibleId = cible.id;
-			sauvegarder();
-			afficherAccueil();
+		card.on("click", () => {
+			parsedData.targetId = target.id;
+			save();
+			renderHome();
 		});
-		grille.append(carte);
+		grid.append(card);
 	});
-	page.append(grille);
+	page.append(grid);
 
-	const rangee = div().classOn('rangee');
-	rangee.append(
-		bouton('Configurer les participants', ['btn-principal'], () => {
-			if (!E.cibleId) {
-				alert('Choisissez une discipline.');
+	const row = div().classOn("row");
+	row.append(
+		btn("Commencez", ["btn-primary"], () => {
+			if (!parsedData.targetId) {
+				alert("Vous n'avez pas choisi un type de tir.");
 				return;
 			}
-			E.etape = 'config';
-			sauvegarder();
-			afficher();
+			parsedData.step = "config";
+			save();
+			render();
 		}),
 	);
-	page.append(rangee);
+	page.append(row);
 
-	if (E.etape !== 'accueil' && E.participants.length > 0) {
-		const bandeau = div().classOn('bandeau-reprise');
-		bandeau.append(
-			el('p').text('Session en cours. Voulez-vous reprendre ?'),
+	if (parsedData.step !== "home" && parsedData.players.length > 0) {
+		const banner = div().classOn("resume-banner");
+		banner.append(
+			el("p").text("Une session existe déjà, vous voulez continuer"),
 		);
-		const r = div().classOn('rangee');
-		r.append(bouton('Reprendre', ['btn-petit'], () => afficher()));
+		const r = div().classOn("row");
+		r.append(btn("Reprendre", ["btn-sm"], () => render()));
 		r.append(
-			bouton('Nouvelle session', ['btn-petit', 'btn-danger'], () => {
-				if (confirm('Effacer la session en cours ?')) reinitialiser();
+			btn("Nouvelle session", ["btn-sm", "btn-danger"], () => {
+				if (confirm("Voulez vous supprimer la session en cours"))
+					reset();
 			}),
 		);
-		bandeau.append(r);
-		page.append(bandeau);
+		banner.append(r);
+		page.append(banner);
 	}
 
 	appEl.append(page);
 }
 
-function afficherConfig() {
-	const cible = getCible();
+function renderConfig() {
+	const target = getTarget();
 	appEl.clear();
-	appEl.append(barreHaute(cible.name, cible.distance));
+	appEl.append(topbar(target.name, target.distance));
 
-	const page = div().classOn('page');
-	page.append(el('h2').text('Participants'));
+	const page = div().classOn("page");
+	page.append(el("h2").text("Joueurs"));
 	page.append(
-		el('p').text('Combien de tireurs participent ? Entrez leurs noms.'),
+		el("p").text(
+			"Entrer le nombre de tireur et entrez leurs noms en dessous",
+		),
 	);
 
-	const champNombre = div().classOn('champ');
-	champNombre.append(el('label').text('Nombre de participants'));
-	const saisieNombre = el('input');
-	saisieNombre.attr('type', 'number').attr('min', '1').attr('max', '30');
-	saisieNombre.self().value = E.participants.length || 1;
-	champNombre.append(saisieNombre);
-	page.append(champNombre);
+	const countField = div().classOn("field");
+	countField.append(el("label").text("Nombre de joueurs"));
+	const countInput = el("input")
+		.attr("type", "number")
+		.attr("min", "1")
+		.attr("max", "30");
+	countInput.self().value = parsedData.players.length || 1;
+	countField.append(countInput);
+	page.append(countField);
 
-	const listePart = div().classOn('liste-participants');
-	page.append(listePart);
+	const nameList = div().classOn("player-list");
+	page.append(nameList);
 
-	function reconstruireNoms() {
-		listePart.clear();
+	function rebuildNames() {
+		nameList.clear();
 		const n = Math.min(
 			30,
-			Math.max(1, parseInt(saisieNombre.self().value) || 1),
+			Math.max(1, parseInt(countInput.self().value) || 1),
 		);
 		for (let i = 0; i < n; i++) {
-			const rangee = div().classOn('rangee-participant');
-			rangee.append(span(i + 1 + '.').classOn('numero'));
-			const inp = el('input')
-				.attr('type', 'text')
-				.attr('placeholder', 'Participant ' + (i + 1));
-			inp.self().value = E.participants[i]?.name || '';
-			rangee.append(inp);
-			listePart.append(rangee);
+			const row = div().classOn("player-row");
+			row.append(span(i + 1 + ".").classOn("player-num"));
+			const inp = el("input")
+				.attr("type", "text")
+				.attr("placeholder", "Joueur " + (i + 1));
+			inp.self().value = parsedData.players[i]?.name || "";
+			row.append(inp);
+			nameList.append(row);
 		}
 	}
 
-	saisieNombre.on('input', reconstruireNoms);
-	reconstruireNoms();
+	countInput.on("input", rebuildNames);
+	rebuildNames();
 
-	const actions = div().classOn('rangee');
-	actions.classOn('mt2');
+	const actions = div().classOn("row");
+	actions.classOn("mt2");
 	actions.append(
-		bouton('Retour', [], () => {
-			E.etape = 'accueil';
-			sauvegarder();
-			afficher();
+		btn("Retour", [], () => {
+			parsedData.step = "home";
+			save();
+			render();
 		}),
 	);
 	actions.append(
-		bouton('Demarrer', ['btn-principal'], () => {
+		btn("Demarrer", ["btn-primary"], () => {
 			const n = Math.min(
 				30,
-				Math.max(1, parseInt(saisieNombre.self().value) || 1),
+				Math.max(1, parseInt(countInput.self().value) || 1),
 			);
-			const noms = Array.from(listePart.qsa('input')).map(
-				(inp, i) => inp.self().value.trim() || 'Participant ' + (i + 1),
+			const names = Array.from(nameList.qsa("input")).map(
+				(inp, i) => inp.self().value.trim() || "Joueur " + (i + 1),
 			);
-			E.participants = noms
+			parsedData.players = names
 				.slice(0, n)
-				.map((nom) => ({ nom, series: [] }));
-			E.joueurActuel = 0;
-			E.serieActuelle = 0;
-			E.tirsEnCours = [];
-			E.etape = 'cible';
-			sauvegarder();
-			afficher();
+				.map((name) => ({ name, series: [] }));
+			parsedData.currentPlayer = 0;
+			parsedData.currentSerie = 0;
+			parsedData.currentShots = [];
+			parsedData.step = "target";
+			save();
+			render();
 		}),
 	);
 	page.append(actions);
@@ -222,236 +235,253 @@ function afficherConfig() {
 	appEl.append(page);
 }
 
-function afficherCible() {
-	const cible = getCible();
-	const etiquettes = cible.allSeriesLabels;
-	const totalSeries = etiquettes.length;
+function renderTarget() {
+	const target = getTarget();
+	const labels = target.allSeriesLabels;
+	const totalSeries = labels.length;
 
-	if (E.participants.every((p) => p.series.length >= totalSeries)) {
-		window.location.href = './tableau.html';
+	if (parsedData.players.every((p) => p.series.length >= totalSeries)) {
+		window.location.href = "./tableau.html";
 		return;
 	}
 
-	for (let i = 0; i < E.participants.length; i++) {
-		const idx = (E.joueurActuel + i) % E.participants.length;
-		if (E.participants[idx].series.length < totalSeries) {
-			E.joueurActuel = idx;
+	for (let i = 0; i < parsedData.players.length; i++) {
+		const idx = (parsedData.currentPlayer + i) % parsedData.players.length;
+		if (parsedData.players[idx].series.length < totalSeries) {
+			parsedData.currentPlayer = idx;
 			break;
 		}
 	}
 
-	const joueur = E.participants[E.joueurActuel];
-	E.serieActuelle = joueur.series.length;
+	const player = parsedData.players[parsedData.currentPlayer];
+	parsedData.currentSerie = player.series.length;
 
 	appEl.clear();
 	appEl.append(
-		barreHaute(
-			joueur.nom,
-			E.joueurActuel +
+		topbar(
+			player.name,
+			parsedData.currentPlayer +
 				1 +
-				'/' +
-				E.participants.length +
-				'  Serie ' +
-				(E.serieActuelle + 1) +
-				'/' +
+				"/" +
+				parsedData.players.length +
+				"  Serie " +
+				(parsedData.currentSerie + 1) +
+				"/" +
 				totalSeries,
 		),
 	);
 
-	const page = div().classOn('page-cible');
+	const page = div().classOn("target-page");
 
-	const bandeau = div().classOn('bandeau-joueur');
-	bandeau.append(span(joueur.nom).classOn('nom-joueur'));
-	const infoSerie = div().classOn('info-serie');
-	bandeau.append(infoSerie);
-	page.append(bandeau);
+	const banner = div().classOn("player-banner");
+	banner.append(span(player.name).classOn("player-name"));
+	const serieInfo = div().classOn("serie-info");
+	banner.append(serieInfo);
+	page.append(banner);
 
-	const enveloppe = div().classOn('enveloppe-cible');
-	cible.render(enveloppe.self());
-	page.append(enveloppe);
+	const wrap = div().classOn("target-wrap");
+	target.render(wrap.self());
+	page.append(wrap);
 
-	const bande = div().classOn('bande-scores');
-	const totalTxt = span('').classOn('total-tirs');
+	const strip = div().classOn("score-strip");
+	const totalEl = span("").classOn("score-total");
 
-	function majBande() {
-		bande.clear();
-		for (let i = 0; i < cible.shotsPerSerie; i++) {
-			const point = div().classOn('point-score');
-			if (i < E.tirsEnCours.length) {
-				point
-					.classOn('rempli')
-					.text(String(fmt(E.tirsEnCours[i].valeur)));
+	function updateStrip() {
+		strip.clear();
+		for (let i = 0; i < target.shotsPerSerie; i++) {
+			const dot = div().classOn("score-dot");
+			if (i < parsedData.currentShots.length) {
+				dot.classOn("filled").text(
+					String(fmt(parsedData.currentShots[i].value)),
+				);
 			} else {
-				point.text('.');
+				dot.text(".");
 			}
-			bande.append(point);
+			strip.append(dot);
 		}
-		const t = E.tirsEnCours.reduce((a, b) => a + b.valeur, 0);
-		totalTxt.text(E.tirsEnCours.length > 0 ? String(t) : '');
-		bande.append(totalTxt);
-		infoSerie.html(
-			etiquettes[E.serieActuelle] +
-				'<br>' +
-				E.tirsEnCours.length +
-				'/' +
-				cible.shotsPerSerie +
-				' tirs',
+		const t = parsedData.currentShots.reduce((a, b) => a + b.value, 0);
+		totalEl.text(parsedData.currentShots.length > 0 ? String(t) : "");
+		strip.append(totalEl);
+		serieInfo.html(
+			labels[parsedData.currentSerie] +
+				"<br>" +
+				parsedData.currentShots.length +
+				"/" +
+				target.shotsPerSerie +
+				" tirs",
 		);
 	}
 
-	function majImpacts() {
-		enveloppe.qsa('.impact').forEach((e) => e.cleanup());
-		E.tirsEnCours.forEach((tir, idx) => {
+	function updateMarkers() {
+		wrap.qsa(".impact").forEach((e) => e.cleanup());
+		parsedData.currentShots.forEach((shot, idx) => {
 			const mk = div()
-				.classOn('impact')
+				.classOn("impact")
 				.text(String(idx + 1));
 			mk.styleJs({
-				left: tir.x + 'px',
-				top: tir.y + 'px',
+				left: shot.x + "px",
+				top: shot.y + "px",
 				zIndex: String(200 + idx),
 			});
-			enveloppe.append(mk);
+			wrap.append(mk);
 		});
 	}
 
-	const barreActions = div().classOn('barre-actions');
-	page.append(bande);
-	page.append(barreActions);
+	const actionBar = div().classOn("action-bar");
+	page.append(strip);
+	page.append(actionBar);
 
-	function majActions() {
-		barreActions.clear();
+	function updateActions() {
+		actionBar.clear();
 
-		const annuler = bouton('Annuler le dernier', ['btn-petit'], () => {
-			if (E.tirsEnCours.length === 0) return;
-			E.tirsEnCours.pop();
-			sauvegarder();
-			majImpacts();
-			majBande();
-			majActions();
+		const undoBtn = btn("Annuler le dernier", ["btn-sm"], () => {
+			if (parsedData.currentShots.length === 0) return;
+			parsedData.currentShots.pop();
+			save();
+			updateMarkers();
+			updateStrip();
+			updateActions();
 		});
-		annuler.self().disabled = E.tirsEnCours.length === 0;
-		barreActions.append(annuler);
+		undoBtn.self().disabled = parsedData.currentShots.length === 0;
+		actionBar.append(undoBtn);
 
-		barreActions.append(
-			bouton('Passer la serie', ['btn-petit'], () => {
-				if (!confirm('Passer cette serie sans score ?')) return;
-				joueur.series.push(Array(cible.shotsPerSerie).fill(0));
-				E.tirsEnCours = [];
-				sauvegarder();
-				afficher();
+		actionBar.append(
+			btn("Passer la serie", ["btn-sm"], () => {
+				if (!confirm("Passer cette serie sans score (0 points marqué)"))
+					return;
+				player.series.push(Array(target.shotsPerSerie).fill(0));
+				parsedData.currentShots = [];
+				save();
+				render();
 			}),
 		);
 
-		barreActions.append(div().classOn('espaceur'));
+		actionBar.append(div().classOn("spacer"));
 
-		if (E.tirsEnCours.length === cible.shotsPerSerie) {
-			barreActions.append(
-				bouton('Valider la serie', ['btn-principal'], () => {
-					joueur.series.push(E.tirsEnCours.map((t) => t.valeur));
-					E.tirsEnCours = [];
-					sauvegarder();
-					afficher();
+		if (parsedData.currentShots.length === target.shotsPerSerie) {
+			actionBar.append(
+				btn("Valider la serie", ["btn-primary"], () => {
+					player.series.push(
+						parsedData.currentShots.map((s) => s.value),
+					);
+					parsedData.currentShots = [];
+					save();
+					render();
 				}),
 			);
 		}
 	}
 
-	enveloppe.on('click', (e) => {
-		if (E.tirsEnCours.length >= cible.shotsPerSerie) return;
-		const zone = e.target.closest('[data-value]');
+	wrap.on("click", (e) => {
+		if (parsedData.currentShots.length >= target.shotsPerSerie) return;
+		const zone = e.target.closest("[data-value]");
 		if (!zone) return;
-		const valeur = parseInt(zone.getAttribute('data-value'));
-		const rect = enveloppe.self().getBoundingClientRect();
-		E.tirsEnCours.push({
+		const value = parseInt(zone.getAttribute("data-value"));
+		const rect = wrap.self().getBoundingClientRect();
+		parsedData.currentShots.push({
 			x: e.clientX - rect.left,
 			y: e.clientY - rect.top,
-			valeur,
+			value,
 		});
-		sauvegarder();
-		majImpacts();
-		majBande();
-		majActions();
+		save();
+		updateMarkers();
+		updateStrip();
+		updateActions();
 	});
 
-	majImpacts();
-	majBande();
-	majActions();
+	updateMarkers();
+	updateStrip();
+	updateActions();
 
-	if (joueur.series.length > 0) {
-		const historique = div().classOn('historique');
-		historique.append(el('h3').text('Series precedentes'));
-		const panneau = div().classOn('panneau-historique');
+	if (player.series.length > 0) {
+		const hist = div().classOn("history");
+		hist.append(el("h3").text("Series precedentes"));
+		const panel = div().classOn("history-panel");
 
-		joueur.series.forEach((serie, si) => {
-			const rangee = div().classOn('rangee-tir');
-			rangee.append(
-				span(etiquettes[si] || 'Serie ' + (si + 1)).classOn(
-					'lbl-serie',
-				),
+		player.series.forEach((serie, si) => {
+			const row = div().classOn("shot-row");
+			row.append(
+				span(labels[si] || "Serie " + (si + 1)).classOn("shot-label"),
 			);
 			serie.forEach((v, vi) => {
-				const sel = el('select');
+				const sel = el("select");
 				for (let val = 0; val <= 10; val++) {
-					const opt = document.createElement('option');
+					const opt = document.createElement("option");
 					opt.value = val;
 					opt.textContent = fmt(val);
 					if (val === v) opt.selected = true;
 					sel.self().appendChild(opt);
 				}
-				sel.on('change', () => {
-					joueur.series[si][vi] = parseInt(sel.self().value);
-					sauvegarder();
-					const sommeEl = panneau.qs(
-						'.rangee-tir:nth-child(' + (si + 1) + ') .somme-serie',
+				sel.on("change", () => {
+					player.series[si][vi] = parseInt(sel.self().value);
+					save();
+					const sumEl = panel.qs(
+						".shot-row:nth-child(" + (si + 1) + ") .shot-sum",
 					);
-					if (sommeEl) sommeEl.text('= ' + somme(joueur.series[si]));
+					if (sumEl) sumEl.text("= " + sum(player.series[si]));
 				});
-				rangee.append(sel);
+				row.append(sel);
 			});
-			rangee.append(span('= ' + somme(serie)).classOn('somme-serie'));
-			panneau.append(rangee);
+			row.append(span("= " + sum(serie)).classOn("shot-sum"));
+			panel.append(row);
 		});
 
-		historique.append(panneau);
-		page.append(historique);
+		hist.append(panel);
+		page.append(hist);
 	}
 
-	const pastilles = div().classOn('pastilles-joueurs');
-	E.participants.forEach((part, idx) => {
-		const fini = part.series.length >= totalSeries;
-		const actuel = idx === E.joueurActuel;
-		const pastille = span(
-			part.nom + ' ' + part.series.length + '/' + totalSeries,
-		).classOn('pastille');
-		if (actuel) pastille.classOn('actif');
-		else if (fini) pastille.classOn('termine');
-		pastilles.append(pastille);
+	const pills = div().classOn("player-pills");
+	parsedData.players.forEach((p, idx) => {
+		const done = p.series.length >= totalSeries;
+		const current = idx === parsedData.currentPlayer;
+		const pill = span(
+			p.name + " " + p.series.length + "/" + totalSeries,
+		).classOn("pill");
+		if (current) pill.classOn("active");
+		else if (done) pill.classOn("done");
+		pills.append(pill);
 	});
-	page.append(pastilles);
+	page.append(pills);
 
-	const reinitRow = div().classOn('rangee');
-	reinitRow.classOn('fin-page');
-	reinitRow.append(
-		bouton('Reinitialiser', ['btn-petit', 'btn-danger'], () => {
-			if (confirm('Reinitialiser toute la session ?')) reinitialiser();
+	const resetRow = div().classOn("row");
+	resetRow.classOn("end-row");
+	resetRow.append(
+		btn("Reinitialiser", ["btn-sm", "btn-danger"], () => {
+			if (confirm("Reinitialiser toute la session depuis le début"))
+				reset();
 		}),
 	);
-	page.append(reinitRow);
+	page.append(resetRow);
 
 	appEl.append(page);
 }
 
-function afficher() {
-	switch (E.etape) {
-		case 'config':
-			afficherConfig();
+function renderCredits() {
+	const link = new Html("a").text("Rediriger vers les crédits");
+	link.elm.href = "https://github.com/Mewax07/NSI_Project__HTML/blob/main/credits.md";
+
+	new Html()
+		.append(link)
+		.styleJs({
+			position: "absolute",
+			bottom: "5px",
+			right: "5px",
+		})
+		.appendTo("body");
+}
+
+function render() {
+	renderCredits();
+	switch (parsedData.step) {
+		case "config":
+			renderConfig();
 			break;
-		case 'cible':
-			afficherCible();
+		case "target":
+			renderTarget();
 			break;
 		default:
-			afficherAccueil();
+			renderHome();
 	}
 }
 
-afficher();
+render();
